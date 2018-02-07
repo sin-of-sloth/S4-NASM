@@ -64,28 +64,26 @@ _start:
     mov word[num], 0
     call _getTheNumber
     mov ax, word[num]
-    mov word[key], ax
+    mov byte[key], al
 
-    mov ebx, string
+    mov edx, string
     
     _caesarCipher:
 
-        cmp byte[ebx], 0
+        cmp byte[edx], 0
         je _endCipher
 
         _incer:
 
-        mov al, byte[ebx]
-        mov byte[temp], al
+        mov al, byte[edx]
 
-        cmp byte[temp], 32
+        cmp al, 32
         je _nextCipher
-        cmp byte[temp], 65
+        cmp al, 65
         jl _nextCipher
-        cmp byte[temp],122
+        cmp al,122
         jg _nextCipher
 
-        mov al, byte[temp]
         cmp al, 91
         jl _caps
 
@@ -94,7 +92,7 @@ _start:
         cmp al, 123
         jl _nextCipher
         sub al, 122
-        add al, 64
+        add al, 96
         jmp _nextCipher
 
         _caps:
@@ -108,8 +106,8 @@ _start:
 
      _nextCipher:
 
-        mov byte[ebx], al
-        inc ebx
+        mov byte[edx], al
+        inc edx
         jmp _caesarCipher
 
 
