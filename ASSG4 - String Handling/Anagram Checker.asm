@@ -1,32 +1,24 @@
 section .bss
 
-string1 : resb 100
-string2 : resb 100
-string : resb 100
+array : resb 100
+array1 : resb 100
+array2 : resb 100
 temp : resb 1
-key : resb 1
-num : resw 1
-digit : resb 1
-i : resw 1
-j : resw 1
-string1Length : resw 1
-string2Length : resw 1
-
+array1Length : resb 1
+array2Length : resb 1
 
 section .data
 
-checker1 : times 200 db 0
-checker2 : times 200 db 0
-prompt1 : db 0Ah, "Enter your first string : "
+counter1 : times 26 db 0
+counter2 : times 26 db 0
+prompt1 : db 0Ah, "Enter the first string : "
 len1 : equ $- prompt1
-prompt2 : db 0Ah, "Enter your second string : "
+prompt2 : db 0Ah, "Enter the second string : "
 len2 : equ $- prompt2
-msg3 : db 0Ah, "Yes, they are anagrams.", 0Ah
+msg3 : db 0Ah, "The strings are anagrams.", 0Ah, 0Ah
 len3 : equ $- msg3
-msg4 : db 0Ah, "No, they are not anagrams.", 0Ah
+msg4 : db 0Ah, "The strings are not anagrams.", 0Ah, 0Ah
 len4 : equ $- msg4
-newl : db 0Ah
-
 
 
 section .text
@@ -40,72 +32,75 @@ _start:
     mov edx, len1
     int 80h
 
-    call _inputString
-    mov byte[string1Length], 0
-    mov esi, string
-    mov edi, string1
-    _movingToOrigString1:
+    call _readArray
+    mov byte[array1Length], 0
+    mov esi, array
+    mov edi, array1
+    _moveArrayToArray1:
         movzx eax, byte[esi]
-        inc byte[checker1 + eax]
+        sub eax, 65
+        inc byte[counter1 + eax]
         MOVSB
-        inc byte[string1Length]
+        inc byte[array1Length]
         mov ebx, esi
-        inc ebx
+        dec ebx
         cmp byte[ebx], 10
-        jne _movingToOrigString1
-    _endMovingToOrigString1:
+        jne _moveArrayToArray1
+    _endMovingArrayToArray1:
 
-    mov eax, 4
-	mov ebx, 1
-	mov ecx, prompt2
-	mov edx, len2
-	int 80h
-
-    call _inputString
-    mov byte[string2Length], 0
-    mov esi, string
-    mov edi, string2
-    _movingToOrigString2:
-        movzx eax, byte[esi]
-        inc byte[checker2 + eax]
-        MOVSB
-        inc byte[string1Length]
-        mov ebx, esi
-        inc ebx
-        cmp byte[ebx], 10
-        jne _movingToOrigString2
-    _endMovingToOrigString2:
-
-    mov ax, word[string1Length]
-    cmp ax, word[string2Length]
-    jne _notAnagram
-
-    mov esi, checker1
-    mov edi, checker2
-    mov ecx, 200
-   
-    _comparer:
-		CMPSB
-		jne _notAnagram
-	loop _comparer
-
-    _endComparison:
-    
     mov eax, 4
     mov ebx, 1
-    mov ecx, msg4
-    mov edx, len4
+    mov ecx, prompt2
+    mov edx, len2
     int 80h
+
+    call _readArray
+    mov byte[array2Length], 0
+    mov esi, array
+    mov edi, array2
+    _moveArrayToArray2:
+        movzx eax, byte[esi]
+        sub eax, 65
+        inc byte[counter2 + eax]
+        MOVSB
+        inc byte[array2Length]
+        mov ebx, esi
+        dec ebx
+        cmp byte[ebx], 10
+        jne _moveArrayToArray2
+    _endMovingArrayToArray2:
+
+    mov al, byte[array1Length]
+    cmp al, byte[array2Length]
+    jne _notAnagrams
+
+    mov esi, counter1
+    mov edi, counter2
+    mov ecx, 26
+    _comparer:
+        CMPSB
+        jne _notAnagrams
+    loop _comparer
+
+
+    _yesAnagrams:
+
+        mov eax, 4
+        mov ebx, 1
+        mov ecx, msg3
+        mov edx, len3
+        int 80h
+    
     jmp _exit
 
+    _notAnagrams:
 
-    _notAnagram:
+        mov eax, 4
+        mov ebx, 1
+        mov ecx, msg4
+        mov edx, len4
+        int 80h
 
-    mov eax, 4
-    mov ebx, 1
-    mov ecx, msg4
-    mov edx, len4
-    int 80h
 
     _exit:
 
@@ -114,59 +109,44 @@ _start:
     int 80h
 
 
-    _inputChar:
-	pusha
-		mov eax, 3
-		mov ebx, 0
-		mov ecx, temp
-		mov edx, 1
-		int 80h
-	popa
-	ret
-
-    _printChar:
-	pusha
-		mov eax, 4
-		mov ebx, 1
-		mov ecx, temp
-		mov edx, 1
-		int 80h
-	popa
-	ret
-
-    
-    _inputString:
+_readArray:
 
     pusha
-    mov ebx, string
-        _arrayLoad:
-            call _inputChar
-            
+
+    mov edi, array
+    mov eax, 0
+    _reader:
+        call _readChar
+        mov al, byte[temp]
+        cmp al, 10
+        je _storeIt
+        cmp al, 65
+        jl _reader
+        cmp al, 122
+        jg _reader
+        cmp al, 90
+        jl _storeIt
+        cmp al, 97
+        jl _reader
+
+        sub al, 32
+
+        _storeIt:
+            STOSB
             cmp byte[temp], 10
-            je _moveToArray
-            cmp byte[temp], 65
-            jl _arrayLoad
-            cmp byte[temp], 122
-            jg _arrayLoad
-            cmp byte[temp], 91
-            jl _moveToArray
-            cmp byte[temp], 97
-            jl _arrayLoad
+            jne _reader
+    _endReader:
+    popa
+    ret
 
-            mov al, byte[temp]
-            mov cl, 32
-            sub al, cl
-            mov byte[temp], al
 
-            _moveToArray:
-
-            mov al, byte[temp]
-            mov byte[ebx], al
-            cmp byte[temp], 10
-            je _endArrayLoad
-            inc ebx
-            jmp _arrayLoad
-
-        _endArrayLoad:
-        popa
-        ret
+_readChar:
+    pusha
+        mov eax, 3
+        mov ebx, 0
+        mov ecx, temp
+        mov edx, 1
+        int 80h
+    popa
+    ret
+    
