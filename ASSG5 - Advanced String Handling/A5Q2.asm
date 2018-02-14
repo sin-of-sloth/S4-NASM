@@ -7,6 +7,7 @@ start : resb 1
 stop : resb 1
 i : resb 1
 j : resb 1
+k : resb 1
 
 section .data
 
@@ -32,60 +33,81 @@ _start:
     int 80h
 
     call _readArray
+
     mov al, byte[arrayLength]
     dec al
     dec al
-    mov byte[stop], al
-    mov byte[j], al
-    mov byte[start], 0
+    cmp al, 0
+    je _noSubStringPalindrome
+
     mov byte[i], 0
     mov esi, array
 
     _findingSubStringPalindrome:
 
-        mov al, byte[i]
-        cmp al, byte[j]
-        jg _doneFindingPalindromeSubString
+    	_iLoop:
+	    mov al, byte[arrayLength]
+	    dec al
+	    dec al
+	    mov byte[j], al
 
-        movzx eax, byte[i]
-        mov bl, byte[esi + eax]
-        mov byte[temp], bl
-        movzx eax, byte[j]
-        mov bl, byte[esi  +eax]
-        cmp byte[temp], bl
-        jne _checkInRest
+	    _jLoop:
+	    mov al, byte[i]
+		mov byte[start], al
+		mov al, byte[j]
+		mov byte[stop], al
 
-        inc byte[i]
-        dec byte[j]
-        jmp _findingSubStringPalindrome
+		_checkFromStartToStop:
 
-        _checkInRest:
-            inc byte[i]
-            dec byte[j]
-            mov al, byte[i]
-            mov byte[start], al
-            mov al, byte[j]
-            mov byte[stop], al
-            jmp _findingSubStringPalindrome
-            
+		    movzx eax, byte[start]
+		    mov cl, byte[esi + eax]
+		    movzx eax, byte[stop]
+		    cmp cl, byte[esi + eax]
+		    jne _notPalindromeFromStartToStop
 
-    _doneFindingPalindromeSubString:
+		    mov al, byte[start]
+		    cmp al, byte[stop]
+		    jnl _yesSubStringPalindrome
 
-    mov al, byte[start]
-    cmp al, byte[stop]
-    je _noSubStringPalindrome
+		    inc byte[start]
+		    dec byte[stop]
+		    jmp _checkFromStartToStop
 
-    _yesSubStringPalindrome:
+		_notPalindromeFromStartToStop:
+
+		    dec byte[j]
+		    mov al, byte[j]
+		    cmp al, byte[i]
+		    je _nextILoop
+		    jmp _jLoop
+
+	    _nextILoop:
+	    	
+		inc byte[i]
+		mov al, byte[arrayLength]
+		dec al
+		dec al
+		cmp byte[i], al
+		je _noSubStringPalindrome
+		jmp _iLoop
+
+       _yesSubStringPalindrome:
 
         mov eax, 4
         mov ebx, 1
         mov ecx, msg2
         mov edx, len2
         int 80h
+	
+	_printFromStartToStop:
+    mov al, byte[i]
+	mov byte[start], al
+	mov al, byte[j]
+	mov byte[stop], al
 
-        call _printSubString
-        call _newLinePrinter
-        jmp _exit
+	call _printSubString
+    call _newLinePrinter
+    jmp _exit
 
     _noSubStringPalindrome:
 
