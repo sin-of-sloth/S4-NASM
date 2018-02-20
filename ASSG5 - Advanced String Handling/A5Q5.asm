@@ -1,19 +1,19 @@
 section .bss
 
-array : resb 100
-origArray : resb 100
-wordDeleted : resb 100
-wordToReplaceWith : resb 100
-temp : resb 1
-arrayLength : resb 1
-wordLength : resb 1
-deleteWordLength : resb 1
-start : resb 1
-stop : resb 1
-i : resb 1
-j : resb 1
-k : resb 1
-flag : resb 1
+array               : resb 100
+origArray           : resb 100
+wordDeleted         : resb 100
+wordToReplaceWith   : resb 100
+temp                : resb 1
+arrayLength         : resb 1
+wordLength          : resb 1
+deleteWordLength    : resb 1
+start               : resb 1
+stop                : resb 1
+i                   : resb 1
+j                   : resb 1
+k                   : resb 1
+flag                : resb 1
 
 section .data
 
@@ -57,6 +57,7 @@ _start:
     int 80h
 
     call _readWord
+    mov byte[deleteWordLength], 0
     mov esi, array
     mov edi, wordDeleted
     _movingArrayToWordDeleted:
@@ -85,9 +86,16 @@ _start:
         cmp byte[ebx], 10
         jne _movingArrayToWordToReplaceWith
 
+    mov eax, 4
+    mov ebx, 1
+    mov ecx, msg4
+    mov edx, len4
+    int 80h
+
     mov byte[start], 0
     mov byte[i], 0
     mov edi, origArray
+    mov byte[flag], 0
 
     _printingStringWithReplacement:
 
@@ -96,8 +104,10 @@ _start:
         je _endPrintingStringWithReplacement
 
         movzx eax, byte[i]
-        cmp byte[edi + eax], 33
-        jl _compareWordWithWordDeleted
+        cmp byte[edi + eax], 32
+        je _compareWordWithWordDeleted
+        cmp byte[edi + eax], 10
+        je _compareWordWithWordDeleted
 
         inc byte[i]
         jmp _printingStringWithReplacement
@@ -106,6 +116,13 @@ _start:
             mov al, byte[i]
             dec al
             mov byte[stop], al
+
+            mov al, byte[start]
+            mov bl, byte[stop]
+            sub bl, al
+            cmp bl, byte[deleteWordLength]
+            jne _printTheWordItself
+
             call _checkIfWordIsWordDeleted
             cmp byte[flag], 1
             je _printTheWordItself
@@ -113,6 +130,7 @@ _start:
             call _printWordToReplaceWith
             call _spacePrinter
             jmp _nexter
+
             _printTheWordItself:
             call _printSubString
             _nexter:
@@ -124,8 +142,8 @@ _start:
 
 
     _endPrintingStringWithReplacement:
-        call _newLinePrinter
-        
+    call _newLinePrinter
+
     _exit:
 
     mov eax, 1
@@ -166,34 +184,32 @@ _readWord:
     popa
     ret
 
+
 _checkIfWordIsWordDeleted:
     pusha
+
     mov byte[j], 0
     mov al, byte[start]
     mov byte[k], al
-    mov ebx, array
-    mov edx, wordDeleted
     mov byte[flag], 0
-    mov al, byte[start]
-    mov cl, byte[stop]
-    sub cl, al
-    cmp cl, byte[deleteWordLength]
-    jne _setFlagEqualToOne
+    
     _checker:
+        mov al, byte[j]
+        cmp al, byte[deleteWordLength]
+        jg _endCheck
+
         movzx eax, byte[j]
-        mov cl, byte[edx + eax]
-        cmp cl, 10
-        je _endCheck
+        mov cl, byte[wordDeleted  + eax]
         movzx eax, byte[k]
-        cmp byte[ebx + eax], cl
-        jne _setFlagEqualToOne
+        cmp cl, byte[origArray + eax]
+        jne _setFlagToOne
+
         inc byte[j]
         inc byte[k]
         jmp _checker
 
-        _setFlagEqualToOne:
-            mov byte[flag], 1
-
+    _setFlagToOne:
+        mov byte[flag], 1
     _endCheck:
     popa
     ret
